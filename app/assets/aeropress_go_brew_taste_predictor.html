@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AeroPress Go Brew Taste Predictor</title>
+<style>
+:root{color-scheme:light;--ink:#25251f;--muted:#706f66;--paper:#f7f5ef;--card:#fffefa;--line:#e5e0d5;--accent:#476b50;--soft:#edf2eb;--warn:#8a5a2b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:980px;margin:auto;padding:28px 18px 56px}
+header{margin-bottom:22px}
+.eyebrow{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:750}
+h1{font-size:clamp(1.8rem,4vw,2.65rem);line-height:1.08;margin:.35rem 0 .6rem}
+h2{font-size:1.1rem;margin:0 0 14px}
+p{margin:.4rem 0;color:var(--muted)}
+.layout{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:18px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 4px 18px #2c261005}
+.section{padding:18px 0;border-top:1px solid var(--line)}
+.section:first-of-type{border-top:0;padding-top:0}
+label,.label{display:block;font-size:.9rem;font-weight:650;margin-bottom:7px}
+.control{margin-bottom:18px}
+input[type=range]{width:100%;accent-color:var(--accent);cursor:pointer}
+select,input[type=number]{font:inherit;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 10px;color:var(--ink)}
+input[type=number]{width:100%}
+select{width:100%}
+.range-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.value{font-weight:750;font-variant-numeric:tabular-nums}
+small,.hint{font-size:.82rem;color:var(--muted)}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pills label{margin:0;cursor:pointer}
+.pills input{position:absolute;opacity:0;pointer-events:none}
+.pills span{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:8px 12px;background:#fff;font-size:.9rem}
+.pills input:checked+span{background:var(--soft);border-color:var(--accent);color:#23452c}
+.result-top{background:var(--soft);border-radius:14px;padding:16px;margin-bottom:16px}
+.result-top .headline{font-size:1.35rem;font-weight:800;margin:4px 0}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{border:1px solid var(--line);border-radius:12px;padding:12px}
+.kpi .k{font-size:.78rem;color:var(--muted)}
+.kpi .v{font-size:1.05rem;font-weight:750;margin-top:4px}
+.bar-row{margin:14px 0}
+.bar-head{display:flex;justify-content:space-between;gap:10px;font-size:.88rem;margin-bottom:6px}
+.bar{height:8px;background:#e9e6dd;border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;width:40%;background:var(--accent);border-radius:99px;transition:width .15s}
+.advice{padding:13px 14px;border-left:3px solid var(--accent);background:#f5f6f0;border-radius:0 10px 10px 0;margin-top:16px}
+.disclaimer{font-size:.8rem;color:var(--muted);margin-top:14px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+button{font:inherit;font-weight:650;border:1px solid var(--line);background:white;border-radius:10px;padding:10px 14px;cursor:pointer}
+button.primary{background:var(--accent);color:white;border-color:var(--accent)}
+button:hover{filter:brightness(.97)}
+@media(max-width:760px){main{padding:20px 12px 40px}.layout{grid-template-columns:1fr}.card{padding:16px}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div class="eyebrow">AeroPress Go · Timemore C3</div>
+  <h1>Brew taste predictor</h1>
+  <p>Adjust your recipe and see an estimated flavor profile update live. Recipe type is derived from the coffee-to-water ratio.</p>
+</header>
+
+<div class="layout">
+<section class="card" aria-labelledby="recipe-title">
+<h2 id="recipe-title">Your recipe</h2>
+<div class="section">
+  <div class="control">
+    <div class="range-head"><label for="coffee">Coffee dose</label><span class="value"><output id="coffeeOut">17</output> g</span></div>
+    <input id="coffee" type="range" min="8" max="25" step=".5" value="17">
+    <div class="range-head"><small>Approx. AeroPress scoops</small><span class="value" id="scoops">1.36 level scoops</span></div>
+    <p class="hint">Estimates use 12.5 g per level scoop or 17 g per heaping scoop. Actual weights vary.</p>
+  </div>
+  <div class="control">
+    <div class="range-head"><label for="water">Water poured into brewer</label><span class="value"><output id="waterOut">180</output> ml</span></div>
+    <input id="water" type="range" min="50" max="210" step="5" value="180">
+    <div class="kpis">
+      <div class="kpi"><div class="k">Water-to-coffee ratio</div><div class="v" id="ratio">1 : 10.6</div></div>
+      <div class="kpi"><div class="k">Ratio-based style</div><div class="v" id="style">Concentrated</div></div>
+    </div>
+  </div>
+  <div class="control">
+    <label for="grind">Timemore C3 setting (clicks from zero)</label>
+    <div class="range-head"><input id="grind" type="range" min="8" max="28" step="1" value="17" aria-label="Grinder clicks" style="flex:1"><span class="value"><output id="grindOut">17</output> clicks</span></div>
+    <p class="hint">Use 14–20 clicks as a starting reference, then adjust to your grinder calibration and taste.</p>
+  </div>
+  <div class="control">
+    <label for="roast">Roast level</label>
+    <select id="roast"><option value="light">Light</option><option value="medium" selected>Medium</option><option value="dark">Dark</option></select>
+  </div>
+  <div class="control">
+    <div class="range-head"><label for="temp">Water temperature</label><span class="value"><output id="tempOut">85</output> °C</span></div>
+    <input id="temp" type="range" min="70" max="100" step="1" value="85">
+    <p class="hint">A starting point from the supplied guidance: 80°C for dark roasts, 85°C for light or medium roasts.</p>
+  </div>
+  <div class="control">
+    <label for="agitation">Agitation / stirring</label>
+    <select id="agitation"><option value="gentle">Gentle</option><option value="moderate" selected>Moderate — stir to wet grounds</option><option value="vigorous">Vigorous</option></select>
+  </div>
+  <div class="control">
+    <div class="range-head"><label for="time">Total contact time</label><span class="value"><output id="timeOut">2:00</output></span></div>
+    <input id="time" type="range" min="30" max="300" step="15" value="120">
+    <p class="hint">Includes steeping and any additional contact before pressing.</p>
+  </div>
+</div>
+<div class="actions">
+  <button class="primary" id="reset">Reset recipe</button>
+  <button id="copy">Copy recipe</button>
+</div>
+</section>
+
+<section class="card" aria-labelledby="prediction-title" aria-live="polite">
+<h2 id="prediction-title">Predicted taste</h2>
+<div class="result-top">
+  <div class="eyebrow">Estimated profile</div>
+  <div class="headline" id="profile">Potentially balanced</div>
+  <p id="summary">A moderate starting recipe; taste and refine one variable at a time.</p>
+</div>
+<div class="kpis">
+  <div class="kpi"><div class="k">Coffee dose</div><div class="v" id="doseResult">17 g</div></div>
+  <div class="kpi"><div class="k">Water volume</div><div class="v" id="waterResult">180 ml</div></div>
+  <div class="kpi"><div class="k">Approx. chamber mark</div><div class="v" id="markResult">Around mark 3</div></div>
+  <div class="kpi"><div class="k">Brew ratio</div><div class="v" id="ratioResult">1:10.6</div></div>
+</div>
+<div id="bars"></div>
+<div class="advice"><strong>Suggested adjustment</strong><div id="advice">This is a reasonable starting recipe.</div></div>
+<p class="disclaimer">This is a heuristic, not a validated sensory model. Scores are relative indicators, not measured percentages. Bean origin, roast development, water chemistry, filter, grinder consistency, and actual water retained by the grounds can change the result. Chamber marks are approximate; check your brewer's markings directly.</p>
+<div class="actions"><button id="details">How predictions work</button></div>
+<div id="modelDetails" hidden>
+  <p><strong>Extraction tendency:</strong> a simplified combination of grind setting, temperature, contact time, agitation, and roast level.</p>
+  <p><strong>Concentration:</strong> estimated separately from coffee dose divided by water poured. The ratio-based label is only a guide, not a universal definition of “regular” or “concentrated.”</p>
+  <p><strong>Important:</strong> C3 click numbers depend on calibration and version. The visual chamber guide is not a manufacturer-certified milliliter conversion.</p>
+</div>
+</section>
+</div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const controls = ["coffee","water","grind","roast","temp","agitation","time"];
+function fmtTime(s){return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;}
+function chamberMark(ml){
+  if(ml <= 95) return "Around mark 1";
+  if(ml <= 150) return "Around mark 2";
+  if(ml <= 210) return "Around mark 3";
+  return "Above mark 3";
+}
+function estimate(){
+  const coffee = Number($("coffee").value), water = Number($("water").value);
+  const clicks = Number($("grind").value), temp = Number($("temp").value);
+  const time = Number($("time").value), roast = $("roast").value, agitation = $("agitation").value;
+  const ratio = water / coffee;
+  // Illustrative heuristic only; not a calibrated extraction model.
+  const grindEffect = (17-clicks)*0.075;
+  const tempEffect = (temp-85)*0.035;
+  const timeEffect = (time-120)*0.005;
+  const agitationEffect = agitation === "vigorous" ? 0.2 : agitation === "gentle" ? -0.15 : 0;
+  const roastEffect = roast === "light" ? -0.2 : roast === "dark" ? 0.2 : 0;
+  const extraction = grindEffect + tempEffect + timeEffect + agitationEffect + roastEffect;
+  const sour = Math.max(10,Math.min(90,50-extraction*35));
+  const bitter = Math.max(10,Math.min(90,30+extraction*35));
+  const concentration = Math.max(10,Math.min(95,(coffee/water)*1000));
+  const profile = extraction < -0.5 ? "Sour-leaning · possibly under-extracted" : extraction > 0.65 ? "Bitter-leaning · possibly over-extracted" : "Potentially balanced";
+  let advice = "This is a reasonable starting recipe. Taste the result before changing another variable.";
+  if(extraction < -0.5) advice = "Try a finer grind, warmer water, or a longer steep. Change one variable at a time.";
+  else if(extraction > 0.65) advice = "Try a coarser grind, cooler water, or a shorter steep. Change one variable at a time.";
+  else if(ratio > 17) advice = "This ratio is relatively dilute. Increase the coffee dose or reduce water if you want more concentration.";
+  else if(ratio < 7) advice = "This ratio is highly concentrated. Add water after brewing if you want a less concentrated drink.";
+  let style = ratio <= 9 ? "Concentrated" : ratio <= 15 ? "Mid-range" : "Dilute";
+  $("coffeeOut").textContent = coffee;
+  $("waterOut").textContent = water;
+  $("grindOut").textContent = clicks;
+  $("tempOut").textContent = temp;
+  $("timeOut").textContent = fmtTime(time);
+  $("scoops").textContent = `${(coffee/12.5).toFixed(2)} level scoops · ${(coffee/17).toFixed(2)} heaping scoops`;
+  $("ratio").textContent = `1 : ${ratio.toFixed(1)}`;
+  $("style").textContent = style;
+  $("profile").textContent = profile;
+  $("summary").textContent = `Roast: ${roast}. ${style} ratio-based style. Flavor prediction is approximate.`;
+  $("doseResult").textContent = `${coffee} g`;
+  $("waterResult").textContent = `${water} ml`;
+  $("markResult").textContent = chamberMark(water);
+  $("ratioResult").textContent = `1:${ratio.toFixed(1)}`;
+  $("advice").textContent = advice;
+  const metrics = [
+    ["Sourness tendency",sour],
+    ["Bitterness tendency",bitter],
+    ["Concentration",concentration]
+  ];
+  $("bars").innerHTML = metrics.map(([name,value]) => `<div class="bar-row"><div class="bar-head"><span>${name}</span><strong>${Math.round(value)}/100</strong></div><div class="bar"><i style="width:${value}%"></i></div></div>`).join("");
+}
+controls.forEach(id => $(id).addEventListener("input", () => {
+  if(id === "roast") $("temp").value = $("roast").value === "dark" ? 80 : 85;
+  estimate();
+}));
+$("roast").addEventListener("change", estimate);
+$("reset").addEventListener("click", () => {
+  $("coffee").value=17; $("water").value=180; $("grind").value=17;
+  $("roast").value="medium"; $("temp").value=85; $("agitation").value="moderate"; $("time").value=120;
+  estimate();
+});
+$("copy").addEventListener("click", async () => {
+  const text = `AeroPress Go recipe
+Coffee: ${$("coffee").value} g
+Water: ${$("water").value} ml
+Ratio: 1:${(Number($("water").value)/Number($("coffee").value)).toFixed(1)}
+Approx. chamber level: ${chamberMark(Number($("water").value))}
+Timemore C3: ${$("grind").value} clicks from zero
+Roast: ${$("roast").value}
+Temperature: ${$("temp").value}°C
+Agitation: ${$("agitation").value}
+Contact time: ${fmtTime(Number($("time").value))}
+Predicted taste: ${$("profile").textContent}`;
+  try { await navigator.clipboard.writeText(text); $("copy").textContent="Copied"; setTimeout(()=> $("copy").textContent="Copy recipe",1400); }
+  catch { window.prompt("Copy your recipe:",text); }
+});
+$("details").addEventListener("click", () => {
+  const el = $("modelDetails"); el.hidden = !el.hidden;
+  $("details").textContent = el.hidden ? "How predictions work" : "Hide prediction details";
+});
+estimate();
+</script>
+</body>
+</html>
